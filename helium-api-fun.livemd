@@ -1,11 +1,12 @@
 # Helium API fun
 
-## Section
+## Helium API for Reward/Prices
 
 ```elixir
 Mix.install([
   {:tesla, "~> 1.4"},
   {:jason, ">= 1.0.0"},
+  {:poison, "~> 5.0"},
   {:vega_lite, "~> 0.1.0"},
   {:kino, "~> 0.3.0"}
 ])
@@ -83,7 +84,7 @@ Posted a question/comment on discord #validators.  We'll see if anything comes o
 ### now for rewards...
 
 ```elixir
-query = [min_time: "2021-07-01T00:00:00.000000Z", max_time: "2021-08-31T00:00:00.000000Z"]
+query = [min_time: "2021-07-01T00:00:00.000000Z", max_time: "2021-09-30T00:00:00.000000Z"]
 
 {:ok, %{body: body}} =
   HeliumClient.client(url) |> Tesla.get("/v1/validators/" <> slk <> "/rewards", query: query)
@@ -103,7 +104,7 @@ slk_rewards = Enum.sort_by(slk_rewards, & &1["block"], :asc)
 ```
 
 ```elixir
-query = [min_time: "2021-07-01T00:00:00.000000Z", max_time: "2021-08-31T00:00:00.000000Z"]
+query = [min_time: "2021-07-01T00:00:00.000000Z", max_time: "2021-09-30T00:00:00.000000Z"]
 
 {:ok, %{body: body}} =
   HeliumClient.client(url) |> Tesla.get("/v1/validators/" <> ups <> "/rewards", query: query)
@@ -276,7 +277,7 @@ Vl.new(width: 740, height: 400, title: "Validator HNT/USD")
   <a href="https://healthchecks.io/projects/50f6d1f2-d3db-49f0-87d7-a1b0619262e5/checks/"><img src="https://healthchecks.io/badge/de919987-3574-4da8-b3b2-56b43f/QUXmy6cJ-2/uneven-peanut-swift.svg" style="max-width: 100%;"></a>
   <a href="https://healthchecks.io/projects/50f6d1f2-d3db-49f0-87d7-a1b0619262e5/checks/"><img src="https://healthchecks.io/badge/de919987-3574-4da8-b3b2-56b43f/bMExPdvp-2/pbau-tertius.svg" style="max-width: 100%;"></a>
   <a href="https://healthchecks.io/projects/50f6d1f2-d3db-49f0-87d7-a1b0619262e5/checks/"><img src="https://healthchecks.io/badge/de919987-3574-4da8-b3b2-56b43f/dyKy9Pv0-2/sharp-leather-kangaroo.svg" style="max-width: 100%;"></a>
-  <a href="https://healthchecks.io/projects/50f6d1f2-d3db-49f0-87d7-a1b0619262e5/checks/"><img src="https://healthchecks.io/badge/de919987-3574-4da8-b3b2-56b43f/bMExPdvp-2/pbau-tertius.svg" style="max-width: 100%;"></a>
+  <a href="https://healthchecks.io/projects/50f6d1f2-d3db-49f0-87d7-a1b0619262e5/checks/"><img src="https://healthchecks.io/badge/de919987-3574-4da8-b3b2-56b43f/0KyLtEDl-2/pbau-quartus.svg" style="max-width: 100%;"></a>
 </p>
 
 Netdata metrics are [here](https://app.netdata.cloud/spaces/plumbum/rooms/validators/nodes/7ff41d8a-f1a6-423f-99e2-ceb55dd31039#chartName=menu_system&utc=America%2FNew_York)
@@ -342,3 +343,791 @@ totals =
 ```
 
 > add table, then persist the data....
+
+## Local JSON RPC playground
+
+```elixir
+# Tesla.post("http://localhost:4647",%{jsonrpc: "2.0", id: 1, method: "info_in_consensus"})
+
+defmodule LocalApi do
+  alias Poison.Parser
+
+  use Tesla, only: [:post], docs: false
+
+  plug(Tesla.Middleware.BaseUrl, "http://localhost:4647")
+  plug(Tesla.Middleware.JSON)
+
+  def in_consensus?() do
+    {:ok, %{body: body}} = post("/", %{jsonrpc: "2.0", id: 1, method: "info_in_consensus"}, [])
+    %{"result" => %{"in_consensus" => in_consensus}} = Parser.parse!(body)
+    in_consensus
+  end
+
+  def name() do
+    {:ok, %{body: body}} = post("/", %{jsonrpc: "2.0", id: 1, method: "info_name"}, [])
+    %{"result" => %{"name" => name}} = Parser.parse!(body)
+    name
+  end
+
+  def hbbft_perf() do
+    case post("/", %{jsonrpc: "2.0", id: 1, method: "hbbft_perf"}, []) do
+      {:ok, %{body: body}} ->
+        %{"result" => result} = Parser.parse!(body)
+        # IO.inspect body
+        result
+
+      {_error, _stuff} ->
+        nil
+    end
+  end
+
+  def height do
+    {:ok, %{body: body}} = post("/", %{jsonrpc: "2.0", id: 1, method: "info_height"}, [])
+    %{"result" => %{"height" => height}} = Parser.parse!(body)
+    height
+  end
+
+  def capture_hbbft() do
+    {path, timestamp} = create_elected_dir()
+    path_to_perf_file = Path.join([path, "#{Integer.to_string(timestamp)}.json"])
+    content = hbbft_perf()
+
+    IO.puts(path_to_perf_file)
+
+    case File.write(path_to_perf_file, Poison.encode!(content), [:binary]) do
+      :ok -> IO.puts("hbbft_perf written to #{path_to_perf_file}")
+      {:error, reason} -> IO.puts("failed to write hbbft_perf: #{IO.inspect(reason)}")
+    end
+  end
+
+  def create_elected_dir() do
+    timestamp = DateTime.utc_now() |> DateTime.to_unix()
+
+    {:ok, path} = File.cwd()
+
+    elected_dir = Path.join([path, "hbbft_perf", Integer.to_string(timestamp)])
+
+    case File.mkdir_p(elected_dir) do
+      :ok -> {elected_dir, timestamp}
+      {:error, reason} -> IO.puts(reason)
+    end
+  end
+end
+
+defmodule PbauQuartusApi do
+  alias Poison.Parser
+
+  use Tesla, only: [:post], docs: false
+
+  plug(Tesla.Middleware.BaseUrl, "http://pbauquartus.painlesspm.com:4647")
+  plug(Tesla.Middleware.JSON)
+
+  def in_consensus?() do
+    {:ok, %{body: body}} = post("/", %{jsonrpc: "2.0", id: 1, method: "info_in_consensus"}, [])
+    %{"result" => %{"in_consensus" => in_consensus}} = Parser.parse!(body)
+    in_consensus
+  end
+
+  def height do
+    {:ok, %{body: body}} = post("/", %{jsonrpc: "2.0", id: 1, method: "info_height"}, [])
+    %{"result" => %{"height" => height}} = Parser.parse!(body)
+    height
+  end
+end
+```
+
+```elixir
+# testing the hbbft_perf capture
+LocalApi.capture_hbbft()
+```
+
+```elixir
+name = LocalApi.name()
+height = LocalApi.height()
+in_con = if LocalApi.in_consensus?(), do: "", else: " not"
+IO.puts(name <> " is" <> in_con <> " in consensus (#{height}).")
+
+in_con = if PbauQuartusApi.in_consensus?(), do: "", else: " not"
+IO.puts("sharp-leather-kangaroo is" <> in_con <> " in consensus (#{PbauQuartusApi.height()}).")
+```
+
+```elixir
+timestamp = DateTime.utc_now() |> DateTime.to_unix()
+
+{:ok, path} = File.cwd()
+
+elected_dir = Path.join([path, "hbbft_perf", Integer.to_string(timestamp)])
+
+case File.mkdir_p(elected_dir) do
+  :ok -> nil
+  {:error, reason} -> IO.puts(reason)
+end
+```
+
+```elixir
+# perf = LocalApi.hbbft_perf()
+
+"""
+in <target> #{elected_dir} dir, when elected? create subdirectory using unix timestamp #{timestamp}
+every 30s or so, run hbbft_perf inserting a timestamp into the datastructure.
+when not elected, stop
+"""
+```
+
+```elixir
+perf = LocalApi.hbbft_perf()
+"#{perf["current_height"]}: #{perf["blocks_since_epoch"]} blocks since epoch"
+```
+
+```elixir
+%{"consensus_members" => consensus_group} = perf
+ups_perf = Enum.find(consensus_group, fn map -> map["name"] == "uneven-peanut-swift" end)
+slk_perf = Enum.find(consensus_group, fn map -> map["name"] == "sharp-leather-kangaroo" end)
+%{"max_seen" => max_seen} = perf
+IO.inspect(max_seen)
+IO.inspect(perf)
+ups_perf || slk_perf
+```
+
+ups map from perf
+
+```
+%{
+  "address" => "112J6SmH7LGKNLDyG6Wbqd9pmA2zAJbgNcmAwQZtYKYmNQunYd73",
+  "bba_completions" => 35,
+  "last_bba" => 0,
+  "last_seen" => 0,
+  "name" => "uneven-peanut-swift",
+  "penalty" => 2.6833485996912394,
+  "seen_votes" => 1377,
+  "tenure" => 2.0721726190476186
+}
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+perf result
+
+```
+%{
+  "blocks_since_epoch" => 35,
+  "consensus_members" => [
+    %{
+      "address" => "11qCt2awAzB4E4kEGJbc3mteh9QmNoxkvHgBfeAQCXnGe8B4VvJ",
+      "bba_completions" => 32,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "long-malachite-sawfish",
+      "penalty" => 7.173230581434947,
+      "seen_votes" => 1248,
+      "tenure" => 3.351165674603175
+    },
+    %{
+      "address" => "112Z3Q1gBvheEdAhUBwdpPbrJ3hNqMWqKb4rd5fVYb8V9ABXGtXo",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "smooth-gingerbread-koala",
+      "penalty" => 4.09786689849127,
+      "seen_votes" => 1376,
+      "tenure" => 3.248387896825397
+    },
+    %{
+      "address" => "112FYPhNYGEbQHekMvJNSmu2uBdfb1kzScf8pJbLrv9jzhgCprRg",
+      "bba_completions" => 34,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "straight-vermilion-seahorse",
+      "penalty" => 5.981279424637083,
+      "seen_votes" => 1353,
+      "tenure" => 4.53687996031746
+    },
+    %{
+      "address" => "112gC7FTuiWED2DEAL7ucnJUUaT3zXF1zVgFtUT36peyEub6caHR",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "feisty-red-mantaray",
+      "penalty" => 0.9972718253968254,
+      "seen_votes" => 1376,
+      "tenure" => 0.9972718253968254
+    },
+    %{
+      "address" => "11i2B4bkNoYxyPztjzn1CR9TJfvCdPTQvtFsgrvaZmMtDxbNU9a",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "skinny-hemp-wombat",
+      "penalty" => 4.075696226150271,
+      "seen_votes" => 1377,
+      "tenure" => 1.8962549603174603
+    },
+    %{
+      "address" => "112TaojBAXfUWbivmtD8a7APNeaQZ6NAQ2rAqdQPuAjTMaQLfeoe",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "boxy-gunmetal-horse",
+      "penalty" => 5.532959551281399,
+      "seen_votes" => 1377,
+      "tenure" => 5.0234375
+    },
+    %{
+      "address" => "112Ez7Ci4KqyXmH7QreX5BTrRvNVxtvD7rvCnkF9sNLb7RmoZvP1",
+      "bba_completions" => 28,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "tangy-cider-mantaray",
+      "penalty" => 4.931506278022887,
+      "seen_votes" => 1377,
+      "tenure" => 1.715674603174603
+    },
+    %{
+      "address" => "13bnf1UhKX7cEV9aLS9v4TvYPDXsdz4GNNm4YAdNAYoFm6kzepU",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "big-chiffon-beaver",
+      "penalty" => 5.7296918096996485,
+      "seen_votes" => 1377,
+      "tenure" => 4.273561507936508
+    },
+    %{
+      "address" => "14L75uokLxPQM39d4jxew46DpNVejEYWBFewqhuXCGURkmQQAuD",
+      "bba_completions" => 27,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "restless-scarlet-sawfish",
+      "penalty" => 10.39545382242354,
+      "seen_votes" => 1248,
+      "tenure" => 3.1946924603174605
+    },
+    %{
+      "address" => "1129jkZcJF2ukV1uDgS5ZLZmN3NCgRHBB9iLAt4oBA8jycWnN6Vz",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "active-gingerbread-pike",
+      "penalty" => 6.486495263235909,
+      "seen_votes" => 1377,
+      "tenure" => 4.460639880952381
+    },
+    %{
+      "address" => "112GCPhm9jRMkmL1iSWuV2vBmdspgKD7UtvEH9rDoBb36TzxaEVk",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "muscular-gingerbread-kitten",
+      "penalty" => 5.489552064925905,
+      "seen_votes" => 1377,
+      "tenure" => 5.3025545634920634
+    },
+    %{
+      "address" => "11F6F6vhJnZwf8gB6PMPS8c4xVwBHtNef2y4ywbMEHvDciXzauY",
+      "bba_completions" => 32,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "acidic-grape-puma",
+      "penalty" => 11.82030181809077,
+      "seen_votes" => 1248,
+      "tenure" => 4.785739087301587
+    },
+    %{
+      "address" => "145xJHRo2rxtSUuWJHeKy9Qd5e7bLuyq13fSPCcmFYyZiDYaACT",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "fluffy-corduroy-giraffe",
+      "penalty" => 7.805524303799583,
+      "seen_votes" => 1377,
+      "tenure" => 6.600496031746031
+    },
+    %{
+      "address" => "1128XYHXHeNWFpf9oKCaGhauoN7wCpDmUwo8b8WV5WHU3kG3QpxT",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "deep-sapphire-sheep",
+      "penalty" => 3.7032426977914477,
+      "seen_votes" => 1377,
+      "tenure" => 2.0402281746031745
+    },
+    %{
+      "address" => "13CWcHcYd8WXeziMVUobLPjYLvHKJCZHpDubF1vNfPt1o5SUeNz",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "skinny-amber-chameleon",
+      "penalty" => 2.8468005952380953,
+      "seen_votes" => 1377,
+      "tenure" => 2.8468005952380953
+    },
+    %{
+      "address" => "11oqRjWqoeY9B6CSnigMbHrquTKAwVrh8Ff5EZWjs9YULnL2NrH",
+      "bba_completions" => 30,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "faint-fossilized-sloth",
+      "penalty" => 5.415391156786964,
+      "seen_votes" => 1377,
+      "tenure" => 3.256919642857143
+    },
+    %{
+      "address" => "11MtQjPfgo7YfLMDDrG7bazeSMyvyaFeYyGhXTDuspUfabf9GZq",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "damaged-lilac-pelican",
+      "penalty" => 10.531466132875472,
+      "seen_votes" => 1377,
+      "tenure" => 7.450223214285714
+    },
+    %{
+      "address" => "11gE9tBenyFKiNuzFo6TckNDjzYZxeL6DN5c1BSdQtWZWACQdTi",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "abundant-lipstick-rat",
+      "penalty" => 4.390094215907748,
+      "seen_votes" => 1376,
+      "tenure" => 3.550248015873016
+    },
+    %{
+      "address" => "112TZBuKXnJyLZ63r5X7Ta35aE12RYCoaZLgezCyu4tzyADiWxSP",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "colossal-malachite-perch",
+      "penalty" => 9.381550804773966,
+      "seen_votes" => 1377,
+      "tenure" => 5.482713293650793
+    },
+    %{
+      "address" => "13Bnhmk1h8Hw8mcpUdwW97heZH8mJBcS3uJJQoV6rcimUYRPP9h",
+      "bba_completions" => 29,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "striped-coral-stork",
+      "penalty" => 6.804786215131244,
+      "seen_votes" => 1377,
+      "tenure" => 5.450768849206349
+    },
+    %{
+      "address" => "14VoG5k6jySrSigdCdFyPnWDmRDKehHFvjh9jCwjGUZTZNb8oeM",
+      "bba_completions" => 34,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "festive-cobalt-snake",
+      "penalty" => 1.7941264031425355,
+      "seen_votes" => 1377,
+      "tenure" => 1.4946428571428572
+    },
+    %{
+      "address" => "112Guw4D4VFsrhSo9QewkeduP2BtzhboeDdc4bj5N54khm5D1oy2",
+      "bba_completions" => 27,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "mini-vanilla-kitten",
+      "penalty" => 5.0627824639517165,
+      "seen_votes" => 1377,
+      "tenure" => 1.1431051587301588
+    },
+    %{
+      "address" => "11hMXG5Wo6F2WsLDhfCRrEVMBuSJJyoKrQihpnzr9sbQjUWgsJo",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "uneven-fuchsia-chinchilla",
+      "penalty" => 11.617241819321162,
+      "seen_votes" => 1377,
+      "tenure" => 5.0140376984126975
+    },
+    %{
+      "address" => "11DGvWhKxTsx6thvcAR12aockZwmmKGi2HpiLTcnXTgE2VYRAoU",
+      "bba_completions" => 23,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "clean-lemon-woodpecker",
+      "penalty" => 15.865526389318799,
+      "seen_votes" => 1248,
+      "tenure" => 2.040277777777778
+    },
+    %{
+      "address" => "11k9pFHEQd67kZCudNzjhMx253zLRYgJRjU6EWjtPquTTt9hhuA",
+      "bba_completions" => 34,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "basic-steel-mantis",
+      "penalty" => 9.820892303709,
+      "seen_votes" => 1348,
+      "tenure" => 5.377901785714286
+    },
+    %{
+      "address" => "118uzdZK4uTycPUBCbmRvdww7DGnsRqQUHxgPtTaJEDv6JK6ZEP",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "early-chili-squid",
+      "penalty" => 2.634700297552442,
+      "seen_votes" => 1377,
+      "tenure" => 1.067063492063492
+    },
+    %{
+      "address" => "14cFDbdyUdUa4WUXGoG9GmJ5TK4giPEXGxL8kF5XcuL8L1NyqeJ",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "flat-bamboo-swan",
+      "penalty" => 0.9972718253968254,
+      "seen_votes" => 1377,
+      "tenure" => 0.9972718253968254
+    },
+    %{
+      "address" => "112tFHR5xw5RJwN9KWkxz5zgWrGiKKesKbeyzQ7Mjn8sKkJJ7Zb5",
+      "bba_completions" => 34,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "elegant-honeysuckle-salamander",
+      "penalty" => 8.641897266630142,
+      "seen_votes" => 1334,
+      "tenure" => 4.2238839285714285
+    },
+    %{
+      "address" => "112add6vQskvUdm5FHxFebcVNn9smFNPfPDcbrTx1yCJqkSU8ZM4",
+      "bba_completions" => 29,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "soaring-rouge-whale",
+      "penalty" => 14.539442144121441,
+      "seen_votes" => 1377,
+      "tenure" => 6.907242063492063
+    },
+    %{
+      "address" => "112EpsMPsQcsT3jw9CpJEqWWTcfBqu2fP2V2M7avDcsKZwu5Bfm7",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "faithful-olive-dragon",
+      "penalty" => 6.290588291107662,
+      "seen_votes" => 1377,
+      "tenure" => 3.257638888888889
+    },
+    %{
+      "address" => "112J6SmH7LGKNLDyG6Wbqd9pmA2zAJbgNcmAwQZtYKYmNQunYd73",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "uneven-peanut-swift",
+      "penalty" => 2.6833485996912394,
+      "seen_votes" => 1377,
+      "tenure" => 2.0721726190476186
+    },
+    %{
+      "address" => "112GMZwxJdqeV2txUPFpJURy2rrveS7iTTtFPoyEspm5DLbWweT4",
+      "bba_completions" => 1,
+      "last_bba" => 33,
+      "last_seen" => 35,
+      "name" => "tangy-cinnabar-rat",
+      "penalty" => 17.956226027957975,
+      "seen_votes" => 0,
+      "tenure" => 1.0815228174603175
+    },
+    %{
+      "address" => "14E67eN5aabNMLTNne7pZuPqDve8C2tg1tXENkU1jdLUzoqZNM2",
+      "bba_completions" => 28,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "radiant-rose-alligator",
+      "penalty" => 4.026203517308311,
+      "seen_votes" => 1353,
+      "tenure" => 2.709151785714286
+    },
+    %{
+      "address" => "14XUwaLShLpte48LqPRsfEP7M8E4abH5HKwqrhMKpktcuNPLPCA",
+      "bba_completions" => 28,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "immense-denim-scorpion",
+      "penalty" => 2.307882787310888,
+      "seen_votes" => 1353,
+      "tenure" => 0.750719246031746
+    },
+    %{
+      "address" => "112tvV6v3HkFZWk7KfBTWUofMkZxzEeyAPMsofKJrr7JDU3vx7Zm",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "calm-clear-locust",
+      "penalty" => 2.5438540791708326,
+      "seen_votes" => 1353,
+      "tenure" => 1.5259176587301586
+    },
+    %{
+      "address" => "112jZ2BKoesyGQwyuSHjGM1ed8sspUqxcXRGBHMeUrps274JCUZx",
+      "bba_completions" => 26,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "massive-gingham-panda",
+      "penalty" => 3.254321889271812,
+      "seen_votes" => 1312,
+      "tenure" => 1.7889880952380954
+    },
+    %{
+      "address" => "112UYszCGaYCqADp78dC1iuitsZo8yuza4nVxZJUCyAKpGowujZU",
+      "bba_completions" => 34,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "electric-daffodil-cougar",
+      "penalty" => 3.6333955401466005,
+      "seen_votes" => 1348,
+      "tenure" => 1.898611111111111
+    },
+    %{
+      "address" => "112rnD1TfUZMtFmA8vgSBNMt246ALjFPdUKjrr2U1L5Lp2MCLKq2",
+      "bba_completions" => 32,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "dandy-lead-python",
+      "penalty" => 8.85636429256863,
+      "seen_votes" => 1248,
+      "tenure" => 4.343080357142857
+    },
+    %{
+      "address" => "13Dut2wBstY4ucmFGEGQwgvmv38jZ1gX2rVRPfrrVH9i1NgB46U",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "keen-sangria-swallow",
+      "penalty" => 9.124444756432187,
+      "seen_votes" => 1353,
+      "tenure" => 4.330654761904762
+    },
+    %{
+      "address" => "112MgKDkPEx9ngKSTuWiPbLyJYkvyKHUdWRFSPEKQQj1BVPmgpK2",
+      "bba_completions" => 34,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "amateur-mulberry-hornet",
+      "penalty" => 7.739228929035248,
+      "seen_votes" => 1317,
+      "tenure" => 5.749925595238095
+    },
+    %{
+      "address" => "14JcxrsQrYGiHKuKAZpvNNji7rBsWsK7Gg2pBwXY46bZNLfX5sU",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "brave-onyx-buffalo",
+      "penalty" => 6.64211943036034,
+      "seen_votes" => 1248,
+      ...
+    },
+    %{
+      "address" => "112ihnWeMjicS2fjN99nLd1TggF9ousCCXoTaEeonkDLHSDTQh1b",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "square-flint-lion",
+      "penalty" => 5.387588355654762,
+      ...
+    },
+    %{
+      "address" => "14s6siAk1m9EVacGWPR2tbBirAnkj4GCBtUkwdZzCFS4EkrZAhh",
+      "bba_completions" => 35,
+      "last_bba" => 0,
+      "last_seen" => 0,
+      "name" => "rare-currant-chipmunk",
+      ...
+    }
+  ],
+  "current_height" => 994537,
+  "max_seen" => 1377
+}
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+Looking to make this call:
+
+```
+# plumbum (kb: master) ~ curl -X POST \
+#      -H 'Content-Type: application/json' \
+#      -d '{"jsonrpc":"2.0","id":1,"method":"info_in_consensus"}' \
+```
+
+## Tailing the console.log
+
+```elixir
+require Logger
+
+defmodule Tail do
+  @moduledoc """
+  Tail implements a simple file tail functionality.
+
+  Given a file, a function, and an interval, Tail will execute the function with a list of new lines found
+   in the file  and continue checking for additional lines on the interval.
+
+  ## Usage
+
+  {:ok, pid} = Tail.start_link("test.txt", &IO.inspect(&1), 1000)
+  Tail.stop(pid)
+  """
+
+  use GenServer
+
+  @type state :: {File.Stream.t(), ([String.t()] -> nil), integer, term, integer, integer}
+
+  @doc """
+  Public interface. Starts a Tail Genserver for the given file, function, and interval (in ms)
+  """
+  @spec start_link(String.t(), ([String.t()] -> nil), integer) :: GenServer.on_start()
+  def start_link(file, fun, interval \\ 1000) do
+    GenServer.start_link(__MODULE__, {file, fun, interval})
+  end
+
+  @doc """
+  Public interface. Sends a call to kill the GenServer
+  """
+  @spec stop(pid) :: :ok
+  def stop(pid) do
+    GenServer.call(pid, :kill)
+  end
+
+  @doc """
+  Init callback. Starts the check loop by casting :check to self and then returns the initial state
+  """
+  @spec init({String.t(), ([String.t()] -> nil), integer}) :: {:ok, state}
+  def init({file, fun, interval}) do
+    stream = File.stream!(file)
+    GenServer.cast(self(), :check)
+    {:ok, {stream, fun, interval, nil, 0, 0}}
+  end
+
+  @doc """
+  Main loop. Calls check_for_lines, sleeps, then continues the loop by casting :check to self
+  and returning with the (possibly updated) last_modified and position
+  """
+  @spec handle_cast(:check, state) :: {:noreply, state}
+  def handle_cast(:check, state = {_stream, _fun, interval, _last_modified, _position, _size}) do
+    state = check_for_lines(state)
+    :timer.sleep(interval)
+    GenServer.cast(self(), :check)
+    {:noreply, state}
+  end
+
+  @doc """
+  Handles :kill call. Checks for any final lines before stopping the genserver
+  """
+  @spec handle_call(:kill, {pid, term}, state) :: {:stop, :normal, :ok, state}
+  def handle_call(:kill, _from, state) do
+    state = check_for_lines(state)
+    {:stop, :normal, :ok, state}
+  end
+
+  # Implementation of line checking. If the file doesn't exist, it simply returns the current state, assuming the
+  # file will appear eventually. If the file hasn't been modified since last time, it also returns the current state.
+  # If the file has been modified, Stream.drop(position) skips lines previously read, then Enum.each gathers the new lines.
+  # Returns the new last_modified and position.
+  @spec check_for_lines(state) :: state
+  defp check_for_lines(state = {stream, fun, interval, last_modified, position, size}) do
+    with {:exists, true} <- {:exists, File.exists?(stream.path)},
+         {:ok, stat} <- File.stat(stream.path),
+         {:mtime, true} <- {:mtime, stat.mtime != last_modified},
+         {:size, true} <- {:size, stat.size >= size} do
+      lines =
+        stream
+        |> Stream.drop(position)
+        |> Enum.into([])
+
+      if length(lines) > 0 do
+        fun.(lines)
+      end
+
+      {stream, fun, interval, stat.mtime, position + length(lines), stat.size}
+    else
+      {:exists, false} -> {File.stream!(stream.path), fun, interval, last_modified, 0, 0}
+      {:error, _} -> {File.stream!(stream.path), fun, interval, last_modified, 0, 0}
+      {:size, false} -> {File.stream!(stream.path), fun, interval, last_modified, 0, 0}
+      {:mtime, false} -> state
+    end
+  end
+end
+```
+
+```elixir
+defmodule TailDkg do
+  def elected?(lines) do
+    case lines do
+      [h | tail] ->
+        if String.match?(h, ~r/not in DKG this round/) do
+          IO.puts("NOT ELECTED: " <> String.trim(h))
+        end
+
+        if String.match?(h, ~r/Preparing to run DKG/) do
+          IO.puts("ELECTED: " <> String.trim(h))
+        end
+
+        elected?(tail)
+
+      [] ->
+        []
+    end
+  end
+end
+
+logs = [
+  "2093 oe8 not a match theunahoe\n",
+  "2093 oe8 " <> "not in DKG this round" <> " theunahoe\n",
+  "2093 oe8 not a match theunahoe\n",
+  "2093 oe8 not a match theunahoe\n",
+  "2093 oe8 " <> "Preparing to run DKG" <> " theunahoe\n",
+  "2093 oe8 not a match theunahoe\n",
+  "2093 oe8 not a match theunahoe\n",
+  "2093 oe8 not a match theunahoe\n",
+  "2093 oe8 " <> "not in DKG this round" <> " theunahoe\n",
+  "2093 oe8 not a match theunahoe\n",
+  "2093 oe8 not a match theunahoe\n",
+  "2093 oe8 " <> "not in DKG this round" <> " theunahoe\n",
+  "2093 oe8 not a match theunahoe\n"
+]
+
+TailDkg.elected?(logs)
+```
+
+```elixir
+# Usage for Tail
+#
+# {:ok, pid} = Tail.start_link("test.txt", &IO.inspect(&1))
+
+# Tail.stop(pid)
+
+# let's track elections by looking for 
+# "Preparing to run DKG"
+# "not in DKG this round"
+
+# {:ok, pid} = Tail.start_link("../../validator_data/log/console.log", &TailDkg.elected?(&1))
+```
+
+```elixir
+Tail.stop(pid)
+```
+
+```elixir
+{:ok, pid2} =
+  #Tail.start_link("../../validator_data/log/console.log", fn lines ->
+    lines
+    |> Enum.reject(&(!String.match?(&1, ~r/absorb_and_commit/)))
+    |> IO.inspect()
+  end)
+```
+
+```elixir
+Tail.stop(pid2)
+```
+
+### NOTE!!!!
+
+### watchtower script won't get latest until we redo `docker run` with latest tag.  On both validators...
+
+* Both validators are on 1.2.2 but not `latest` via watchtower.
+* Both are running VALIDATION_WIDTH=6
