@@ -33,3 +33,6 @@ npm-debug.log
 
 # The built Escript
 /livebook
+
+# The location for hbbft perf scrapes
+/hbbft_perf/
