@@ -2,6 +2,10 @@
 
 ## Local JSON RPC playground
 
+### WATCHER IS NOT WATCHING LATEST TAG!!!!!   Swapped....
+
+<!-- livebook:{"break_markdown":true} -->
+
 To connect to the `perf_tracker` backend, run `iex --sname perf_tracker --cookie tertius -S mix`.
 Then attach to that node using the "chip" icon in the menu (on the left).
 
@@ -17,8 +21,11 @@ height = LocalApi.height()
 in_con = if LocalApi.in_consensus?(), do: "", else: " not"
 IO.puts(name <> " is" <> in_con <> " in consensus (#{height}).")
 
-in_con = if PbauQuartusApi.in_consensus?(), do: "", else: " not"
-IO.puts("sharp-leather-kangaroo is" <> in_con <> " in consensus (#{PbauQuartusApi.height()}).")
+# in_con = if PbauQuartusApi.in_consensus?(), do: "", else: " not"
+# IO.puts("sharp-leather-kangaroo is" <> in_con <> " in consensus (#{PbauQuartusApi.height()}).")
+
+in_con = if PbauApi.in_consensus?(), do: "", else: " not"
+IO.puts("sharp-leather-kangaroo is" <> in_con <> " in consensus (#{PbauApi.height()}).")
 ```
 
 ```elixir
@@ -54,9 +61,50 @@ perf = LocalApi.hbbft_perf()
 ups_perf = Enum.find(consensus_group, fn map -> map["name"] == "uneven-peanut-swift" end)
 slk_perf = Enum.find(consensus_group, fn map -> map["name"] == "sharp-leather-kangaroo" end)
 %{"max_seen" => max_seen} = perf
-IO.inspect(max_seen)
+IO.puts("\"max_seen\" => #{max_seen}")
 IO.inspect(perf)
 ups_perf || slk_perf
+```
+
+```
+%{
+  "address" => "114nxJxnwFXrPMnCMHir3ZxddpveGGwVAyKitPo293yFAB69DN2",
+  "bba_completions" => 26,
+  "last_bba" => 0,
+  "last_seen" => 0,
+  "name" => "sharp-leather-kangaroo",
+  "penalty" => 5.049794861627003,
+  "seen_votes" => 1067,
+  "tenure" => 3.796502976190476
+}
+```
+
+1:16 pm 9/18
+
+then in bottom three.... le sigh...
+
+```
+%{
+  "address" => "114nxJxnwFXrPMnCMHir3ZxddpveGGwVAyKitPo293yFAB69DN2",
+  "bba_completions" => 5,
+  "last_bba" => 0,
+  "last_seen" => 0,
+  "name" => "sharp-leather-kangaroo",
+  "penalty" => 6.534396918614705,
+  "seen_votes" => 83,
+  "tenure" => 4.293055555555555
+}
+```
+
+1:28 pm 9/18
+
+```elixir
+p_t = (5.049794861627003 - 3.796502976190476) / 3.796502976190476
+IO.puts(p_t)
+p_t = (6.534396918614705 - 4.293055555555555) / 4.293055555555555
+IO.puts(p_t)
+bottom_three_pen = 6.534396918614705 - 4.293055555555555 - (5.049794861627003 - 3.796502976190476)
+IO.puts(bottom_three_pen)
 ```
 
 ups map from perf
@@ -74,7 +122,9 @@ ups map from perf
 }
 ```
 
-<!-- livebook:{"break_markdown":true} -->
+```elixir
+
+```
 
 perf result
 
