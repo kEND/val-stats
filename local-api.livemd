@@ -25,7 +25,7 @@ IO.puts(name <> " is" <> in_con <> " in consensus (#{height}).")
 # IO.puts("sharp-leather-kangaroo is" <> in_con <> " in consensus (#{PbauQuartusApi.height()}).")
 
 in_con = if PbauApi.in_consensus?(), do: "", else: " not"
-IO.puts("sharp-leather-kangaroo is" <> in_con <> " in consensus (#{PbauApi.height()}).")
+IO.puts(PbauApi.name() <> " is" <> in_con <> " in consensus (#{PbauApi.height()}).")
 ```
 
 ```elixir
@@ -64,6 +64,14 @@ slk_perf = Enum.find(consensus_group, fn map -> map["name"] == "sharp-leather-ka
 IO.puts("\"max_seen\" => #{max_seen}")
 IO.inspect(perf)
 ups_perf || slk_perf
+```
+
+```elixir
+val_perf = ups_perf || slk_perf
+
+IO.puts("##### #{perf["current_height"]}: #{perf["blocks_since_epoch"]} blocks since epoch")
+IO.puts("- Our seen #{val_perf["seen_votes"]} of #{perf["max_seen"]} (max)")
+IO.puts("- Our BBA #{val_perf["bba_completions"]} of #{perf["blocks_since_epoch"]} (blocks)")
 ```
 
 ```

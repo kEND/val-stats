@@ -16,6 +16,7 @@ Mix.install([
 defmodule HeliumClient do
   require Tesla
 
+  # helium-api.stakejoy.com
   def client(url \\ "https://api.helium.io/") do
     Tesla.client([
       {Tesla.Middleware.BaseUrl, url},
@@ -26,7 +27,8 @@ end
 ```
 
 ```elixir
-url = "https://api.helium.io"
+# url = "https://helium-api.stakejoy.com"
+url = "https://api.helium.io/"
 
 slk = "114nxJxnwFXrPMnCMHir3ZxddpveGGwVAyKitPo293yFAB69DN2"
 ups = "112J6SmH7LGKNLDyG6Wbqd9pmA2zAJbgNcmAwQZtYKYmNQunYd73"
@@ -35,12 +37,12 @@ ups = "112J6SmH7LGKNLDyG6Wbqd9pmA2zAJbgNcmAwQZtYKYmNQunYd73"
 ```
 
 ```elixir
-%{"data" => %{"penalties" => penalties}} = body
-penalties
+{:ok, %{body: body}} = HeliumClient.client(url) |> Tesla.get("/v1/validators/" <> ups)
 ```
 
 ```elixir
-{:ok, %{body: body}} = HeliumClient.client(url) |> Tesla.get("/v1/validators/" <> ups)
+%{"data" => %{"penalties" => penalties}} = body
+penalties
 ```
 
 #### UPS CGs of 8/25
@@ -84,7 +86,7 @@ Posted a question/comment on discord #validators.  We'll see if anything comes o
 ### now for rewards...
 
 ```elixir
-query = [min_time: "2021-07-01T00:00:00.000000Z", max_time: "2021-09-30T00:00:00.000000Z"]
+query = [min_time: "2021-07-01T00:00:00.000000Z", max_time: "2021-10-31T00:00:00.000000Z"]
 
 {:ok, %{body: body}} =
   HeliumClient.client(url) |> Tesla.get("/v1/validators/" <> slk <> "/rewards", query: query)
@@ -108,7 +110,7 @@ slk_rewards = Enum.sort_by(slk_rewards, & &1["block"], :asc)
 ```
 
 ```elixir
-query = [min_time: "2021-07-01T00:00:00.000000Z", max_time: "2021-09-30T00:00:00.000000Z"]
+query = [min_time: "2021-07-01T00:00:00.000000Z", max_time: "2021-10-31T00:00:00.000000Z"]
 
 {:ok, %{body: body}} =
   HeliumClient.client(url) |> Tesla.get("/v1/validators/" <> ups <> "/rewards", query: query)
@@ -281,12 +283,23 @@ Vl.new(width: 740, height: 400, title: "Validator HNT/USD")
 |> Vl.resolve(:scale, y: :independent)
 ```
 
+#### Notes on graph
+
+* September 6 - 18 dryspell due to perf penalties on 1.2.2 on OVH bare.
+* September 18th - kanga was on interserver Ryzen for 10 CGs
+* Septemper 18th (post CG run) - peanut switched to interserver Ryzen
+* September 23rd - peanut on interserver for 10 CG, no perf run
+* Switched kanga back to Ryzen, but validators are only 0.4556 apart
+* September 25th - Unfortunate peanut election on OVH.  2 CGs 2 big perf penalties
+
+<!-- livebook:{"break_markdown":true} -->
+
 ### healthchecks.io
 
 <p style="center">
-  <a href="https://healthchecks.io/projects/50f6d1f2-d3db-49f0-87d7-a1b0619262e5/checks/"><img src="https://healthchecks.io/badge/de919987-3574-4da8-b3b2-56b43f/QUXmy6cJ-2/uneven-peanut-swift.svg" style="max-width: 100%;"></a>
-  <a href="https://healthchecks.io/projects/50f6d1f2-d3db-49f0-87d7-a1b0619262e5/checks/"><img src="https://healthchecks.io/badge/de919987-3574-4da8-b3b2-56b43f/bMExPdvp-2/pbau-tertius.svg" style="max-width: 100%;"></a>
   <a href="https://healthchecks.io/projects/50f6d1f2-d3db-49f0-87d7-a1b0619262e5/checks/"><img src="https://healthchecks.io/badge/de919987-3574-4da8-b3b2-56b43f/dyKy9Pv0-2/sharp-leather-kangaroo.svg" style="max-width: 100%;"></a>
+  <a href="https://healthchecks.io/projects/50f6d1f2-d3db-49f0-87d7-a1b0619262e5/checks/"><img src="https://healthchecks.io/badge/de919987-3574-4da8-b3b2-56b43f/bMExPdvp-2/pbau-tertius.svg" style="max-width: 100%;"></a>
+  <a href="https://healthchecks.io/projects/50f6d1f2-d3db-49f0-87d7-a1b0619262e5/checks/"><img src="https://healthchecks.io/badge/de919987-3574-4da8-b3b2-56b43f/QUXmy6cJ-2/uneven-peanut-swift.svg" style="max-width: 100%;"></a>
   <a href="https://healthchecks.io/projects/50f6d1f2-d3db-49f0-87d7-a1b0619262e5/checks/"><img src="https://healthchecks.io/badge/de919987-3574-4da8-b3b2-56b43f/FUbTcrUk-2/pbau.svg" style="max-width: 100%;"></a>
 </p>
 
@@ -1155,6 +1168,7 @@ Tail.stop(pid2)
 
 ```elixir
 IO.puts("On Ryzen, 1.3.3")
+IO.puts("Confirmed in bottom 3 for some number of CGs in this group")
 
 pens = [
   %{"amount" => 0.099853515625, "height" => 1_016_175, "type" => "performance"},
@@ -1170,6 +1184,77 @@ pens = [
   %{"amount" => 0.5, "height" => 1_016_335, "type" => "tenure"},
   %{"amount" => 0.5, "height" => 1_016_368, "type" => "tenure"},
   %{"amount" => 0.5, "height" => 1_016_400, "type" => "tenure"}
+]
+
+{p, t} = Enum.split_with(pens, fn %{"type" => type} -> type == "performance" end)
+
+ratio =
+  Enum.reduce(p, 0.0, fn %{"amount" => amount}, acc -> acc + amount end) /
+    Enum.reduce(t, 0.0, fn %{"amount" => amount}, acc -> acc + amount end)
+```
+
+```elixir
+pens = [
+  %{"amount" => 0.5, "height" => 1_022_021, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_022_054, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_022_086, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_022_119, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_022_152, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_022_185, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_022_217, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_022_250, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_022_283, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_022_315, "type" => "tenure"}
+]
+
+0.00
+```
+
+### A run just starting for UPS on tertius OVH   9/25 AM
+
+Missing some BBAs
+
+* Our seen 770 of 770 (max)
+* Our BBA 15 of 21 (blocks)
+
+#### 2nd CG not starting well, not in bottom 3, seems to do okay after rough start
+
+* Our seen 6 of 68 (max)
+
+* Our BBA 1 of 2 (blocks)
+
+* Our seen 131 of 193 (max)
+
+* Our BBA 4 of 5 (blocks)
+
+##### 1026117: 12 blocks since epoch
+
+* Our seen 427 of 489 (max)
+* Our BBA 11 of 12 (blocks)
+
+##### 1026119: 14 blocks since epoch
+
+* Our seen 513 of 575 (max)
+* Our BBA 13 of 14 (blocks)
+
+##### 1026127: 22 blocks since epoch
+
+* Our seen 851 of 913 (max)
+* Our BBA 21 of 22 (blocks)
+
+##### 1026132: 27 blocks since epoch
+
+* Our seen 1066 of 1128 (max)
+* Our BBA 26 of 27 (blocks)
+
+```elixir
+IO.puts("UPS on OVH tertius")
+
+pens = [
+  %{"amount" => 0.6993865966796875, "height" => 1_026_103, "type" => "performance"},
+  %{"amount" => 0.7589263916015625, "height" => 1_026_135, "type" => "performance"},
+  %{"amount" => 0.5, "height" => 1_026_070, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_026_103, "type" => "tenure"}
 ]
 
 {p, t} = Enum.split_with(pens, fn %{"type" => type} -> type == "performance" end)
