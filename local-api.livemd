@@ -26,6 +26,9 @@ IO.puts(name <> " is" <> in_con <> " in consensus (#{height}).")
 
 in_con = if PbauApi.in_consensus?(), do: "", else: " not"
 IO.puts(PbauApi.name() <> " is" <> in_con <> " in consensus (#{PbauApi.height()}).")
+
+in_con = if Pbau2Api.in_consensus?(), do: "", else: " not"
+IO.puts(Pbau2Api.name() <> " is" <> in_con <> " in consensus (#{Pbau2Api.height()}).")
 ```
 
 ```elixir

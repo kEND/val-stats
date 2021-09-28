@@ -1,5 +1,7 @@
 # Helium API fun
 
+## Top
+
 ## Helium API for Reward/Prices
 
 ```elixir
@@ -27,8 +29,8 @@ end
 ```
 
 ```elixir
-# url = "https://helium-api.stakejoy.com"
-url = "https://api.helium.io/"
+url = "https://helium-api.stakejoy.com"
+# url = "https://api.helium.io/"
 
 slk = "114nxJxnwFXrPMnCMHir3ZxddpveGGwVAyKitPo293yFAB69DN2"
 ups = "112J6SmH7LGKNLDyG6Wbqd9pmA2zAJbgNcmAwQZtYKYmNQunYd73"
@@ -37,12 +39,12 @@ ups = "112J6SmH7LGKNLDyG6Wbqd9pmA2zAJbgNcmAwQZtYKYmNQunYd73"
 ```
 
 ```elixir
-{:ok, %{body: body}} = HeliumClient.client(url) |> Tesla.get("/v1/validators/" <> ups)
+%{"data" => %{"penalties" => penalties}} = body
+penalties
 ```
 
 ```elixir
-%{"data" => %{"penalties" => penalties}} = body
-penalties
+{:ok, %{body: body}} = HeliumClient.client(url) |> Tesla.get("/v1/validators/" <> ups)
 ```
 
 #### UPS CGs of 8/25
@@ -298,9 +300,9 @@ Vl.new(width: 740, height: 400, title: "Validator HNT/USD")
 
 <p style="center">
   <a href="https://healthchecks.io/projects/50f6d1f2-d3db-49f0-87d7-a1b0619262e5/checks/"><img src="https://healthchecks.io/badge/de919987-3574-4da8-b3b2-56b43f/dyKy9Pv0-2/sharp-leather-kangaroo.svg" style="max-width: 100%;"></a>
-  <a href="https://healthchecks.io/projects/50f6d1f2-d3db-49f0-87d7-a1b0619262e5/checks/"><img src="https://healthchecks.io/badge/de919987-3574-4da8-b3b2-56b43f/bMExPdvp-2/pbau-tertius.svg" style="max-width: 100%;"></a>
-  <a href="https://healthchecks.io/projects/50f6d1f2-d3db-49f0-87d7-a1b0619262e5/checks/"><img src="https://healthchecks.io/badge/de919987-3574-4da8-b3b2-56b43f/QUXmy6cJ-2/uneven-peanut-swift.svg" style="max-width: 100%;"></a>
   <a href="https://healthchecks.io/projects/50f6d1f2-d3db-49f0-87d7-a1b0619262e5/checks/"><img src="https://healthchecks.io/badge/de919987-3574-4da8-b3b2-56b43f/FUbTcrUk-2/pbau.svg" style="max-width: 100%;"></a>
+  <a href="https://healthchecks.io/projects/50f6d1f2-d3db-49f0-87d7-a1b0619262e5/checks/"><img src="https://healthchecks.io/badge/de919987-3574-4da8-b3b2-56b43f/QUXmy6cJ-2/uneven-peanut-swift.svg" style="max-width: 100%;"></a>
+  <a href="https://healthchecks.io/projects/50f6d1f2-d3db-49f0-87d7-a1b0619262e5/checks/"><img src="https://healthchecks.io/badge/de919987-3574-4da8-b3b2-56b43f/8j7WRPwG-2/pbau2.svg" style="max-width: 100%;"></a>
 </p>
 
 Netdata metrics are [here](https://app.netdata.cloud/spaces/plumbum/rooms/validators/nodes/7ff41d8a-f1a6-423f-99e2-ceb55dd31039#chartName=menu_system&utc=America%2FNew_York)
@@ -1164,6 +1166,8 @@ Tail.stop(pid2)
 
 ### RESOLVED - both are running `latest` with default `VALIDATION_WIDTH`
 
+<!-- livebook:{"branch_parent_index":0} -->
+
 ## Ryzen vs OVH bare
 
 ```elixir
@@ -1263,3 +1267,117 @@ ratio =
   Enum.reduce(p, 0.0, fn %{"amount" => amount}, acc -> acc + amount end) /
     Enum.reduce(t, 0.0, fn %{"amount" => amount}, acc -> acc + amount end)
 ```
+
+### A SLK run 9/26 on Ryzen interserver
+
+3rd? CG...   getting perf penalties
+
+##### 1027765: 29 blocks since epoch
+
+* Our seen 1027 of 1030 (max)
+* Our BBA 20 of 29 (blocks)
+
+##### 1027767: 31 blocks since epoch
+
+* Our seen 1096 of 1099 (max)
+* Our BBA 21 of 31 (blocks)
+
+#### 4th?  starting well  `miner hbbft queue` showed all but two vals were "okay"
+
+##### 1027772: 3 blocks since epoch
+
+* Our seen 111 of 111 (max)
+* Our BBA 3 of 3 (blocks)
+
+##### 1027777: 8 blocks since epoch
+
+* Our seen 318 of 318 (max)
+* Our BBA 8 of 8 (blocks)
+
+##### 1027784: 15 blocks since epoch
+
+* Our seen 619 of 619 (max)
+* Our BBA 15 of 15 (blocks)
+
+##### 1027787: 18 blocks since epoch
+
+* Our seen 748 of 748 (max)
+* Our BBA 18 of 18 (blocks)
+
+##### 1027791: 22 blocks since epoch
+
+* Our seen 920 of 920 (max)
+* Our BBA 22 of 22 (blocks)
+
+##### 1027794: 25 blocks since epoch
+
+* Our seen 1049 of 1049 (max)
+* Our BBA 25 of 25 (blocks)
+
+##### 1027797: 28 blocks since epoch
+
+* Our seen 1178 of 1178 (max)
+* Our BBA 28 of 28 (blocks)
+
+##### 1027800: 31 blocks since epoch
+
+* Our seen 1307 of 1307 (max)
+* Our BBA 31 of 31 (blocks)
+
+```elixir
+IO.puts("SLK on Ryzen intersever")
+
+pens = [
+  %{"amount" => 0.299652099609375, "height" => 1_027_701, "type" => "performance"},
+  %{"amount" => 0.6994781494140625, "height" => 1_027_734, "type" => "performance"},
+  %{"amount" => 0.999359130859375, "height" => 1_027_767, "type" => "performance"},
+  %{"amount" => 0.5, "height" => 1_027_636, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_027_669, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_027_701, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_027_734, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_027_767, "type" => "tenure"}
+]
+
+{p, t} = Enum.split_with(pens, fn %{"type" => type} -> type == "performance" end)
+
+ratio =
+  Enum.reduce(p, 0.0, fn %{"amount" => amount}, acc -> acc + amount end) /
+    Enum.reduce(t, 0.0, fn %{"amount" => amount}, acc -> acc + amount end)
+```
+
+### Elected again on 26 Sept 2021  SLK  on Ryzen
+
+#### 2nd? CG going well
+
+##### 1027936: 0 blocks since epoch
+
+* Our seen 0 of 0 (max)
+* Our BBA 0 of 0 (blocks)
+
+##### 1027938: 3 blocks since epoch
+
+* Our seen 111 of 112 (max)
+* Our BBA 3 of 3 (blocks)
+
+##### 1027942: 7 blocks since epoch
+
+* Our seen 278 of 279 (max)
+* Our BBA 7 of 7 (blocks)
+
+##### 1027948: 13 blocks since epoch
+
+* Our seen 532 of 533 (max)
+* Our BBA 13 of 13 (blocks)
+
+```elixir
+IO.puts("SLK on Ryzen intersever...  just a bit after the above run")
+
+pens = [
+  %{"amount" => 0.5, "height" => 1_027_900, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_027_933, "type" => "tenure"}
+]
+
+0.00
+```
+
+## Bottom
