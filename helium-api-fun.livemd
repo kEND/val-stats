@@ -1171,6 +1171,17 @@ Tail.stop(pid2)
 ## Ryzen vs OVH bare
 
 ```elixir
+defmodule Pens do
+  def perf_ratio(pens) do
+    {p, t} = Enum.split_with(pens, fn %{"type" => type} -> type == "performance" end)
+
+    Enum.reduce(p, 0.0, fn %{"amount" => amount}, acc -> acc + amount end) /
+      Enum.reduce(t, 0.0, fn %{"amount" => amount}, acc -> acc + amount end)
+  end
+end
+```
+
+```elixir
 IO.puts("On Ryzen, 1.3.3")
 IO.puts("Confirmed in bottom 3 for some number of CGs in this group")
 
@@ -1190,11 +1201,7 @@ pens = [
   %{"amount" => 0.5, "height" => 1_016_400, "type" => "tenure"}
 ]
 
-{p, t} = Enum.split_with(pens, fn %{"type" => type} -> type == "performance" end)
-
-ratio =
-  Enum.reduce(p, 0.0, fn %{"amount" => amount}, acc -> acc + amount end) /
-    Enum.reduce(t, 0.0, fn %{"amount" => amount}, acc -> acc + amount end)
+Pens.perf_ratio(pens)
 ```
 
 ```elixir
@@ -1261,11 +1268,7 @@ pens = [
   %{"amount" => 0.5, "height" => 1_026_103, "type" => "tenure"}
 ]
 
-{p, t} = Enum.split_with(pens, fn %{"type" => type} -> type == "performance" end)
-
-ratio =
-  Enum.reduce(p, 0.0, fn %{"amount" => amount}, acc -> acc + amount end) /
-    Enum.reduce(t, 0.0, fn %{"amount" => amount}, acc -> acc + amount end)
+Pens.perf_ratio(pens)
 ```
 
 ### A SLK run 9/26 on Ryzen interserver
@@ -1338,11 +1341,7 @@ pens = [
   %{"amount" => 0.5, "height" => 1_027_767, "type" => "tenure"}
 ]
 
-{p, t} = Enum.split_with(pens, fn %{"type" => type} -> type == "performance" end)
-
-ratio =
-  Enum.reduce(p, 0.0, fn %{"amount" => amount}, acc -> acc + amount end) /
-    Enum.reduce(t, 0.0, fn %{"amount" => amount}, acc -> acc + amount end)
+Pens.perf_ratio(pens)
 ```
 
 ### Elected again on 26 Sept 2021  SLK  on Ryzen
@@ -1380,4 +1379,180 @@ pens = [
 0.00
 ```
 
+```elixir
+IO.puts("SLK on Ryzen intersever...  in and out, one CG 9/30")
+
+pens = [
+  %{"amount" => 0.099853515625, "height" => 1_033_918, "type" => "performance"},
+  %{"amount" => 0.5, "height" => 1_033_883, "type" => "tenure"}
+]
+
+Pens.perf_ratio(pens)
+```
+
+Not so hot at the beginning.  SLK in again, 10/1
+
+##### 1035497: 46 blocks since epoch
+
+* Our seen 1644 of 1648 (max)
+* Our BBA 33 of 46 (blocks)
+
+#### 2nd CG
+
+##### 1035499: 0 blocks since epoch
+
+* Our seen 0 of 0 (max)
+* Our BBA 0 of 0 (blocks)
+
+##### 1035505: 6 blocks since epoch
+
+* Our seen 197 of 199 (max)
+* Our BBA 5 of 6 (blocks)
+
+##### 1035508: 9 blocks since epoch
+
+* Our seen 301 of 303 (max)
+* Our BBA 7 of 9 (blocks)
+
+##### 1035511: 12 blocks since epoch
+
+* Our seen 407 of 409 (max)
+* Our BBA 10 of 12 (blocks)
+
+##### 1035513: 14 blocks since epoch
+
+* Our seen 473 of 475 (max)
+* Our BBA 10 of 14 (blocks)
+
+##### 1035525: 26 blocks since epoch
+
+* Our seen 901 of 903 (max)
+* Our BBA 16 of 26 (blocks)
+
+```elixir
+IO.puts("SLK on Ryzen intersever...  in for three CGs, ROUGH")
+IO.puts("13 of 43 had exactly 16 bba completions when the rest were 31 or 32")
+
+pens = [
+  %{"amount" => 0.099853515625, "height" => 1_033_918, "type" => "performance"},
+  %{"amount" => 1.29864501953125, "height" => 1_035_497, "type" => "performance"},
+  %{"amount" => 1.4989013671875, "height" => 1_035_536, "type" => "performance"},
+  %{"amount" => 1.59869384765625, "height" => 1_035_572, "type" => "performance"},
+  %{"amount" => 0.5, "height" => 1_035_449, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_035_497, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_035_536, "type" => "tenure"}
+]
+
+Pens.perf_ratio(pens)
+```
+
+```elixir
+IO.puts("UPS on Ryzen intersever... NO PERF PENS!!!")
+
+pens = [
+  %{"amount" => 0.5, "height" => 1_037_119, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_037_152, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_037_185, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_037_218, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_037_251, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_037_284, "type" => "tenure"}
+]
+
+0.00
+```
+
+UPS 10/5
+
+##### 1041348: 22 blocks since epoch
+
+* Our seen 911 of 911 (max)
+* Our BBA 22 of 22 (blocks)
+
+```elixir
+IO.puts("UPS on Ryzen interserver .... some perf, but good run")
+
+pens = [
+  %{"amount" => 0.659027099609375, "height" => 1_041_291, "type" => "performance"},
+  %{"amount" => 0.5, "height" => 1_041_258, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_041_291, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_041_324, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_041_356, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_041_388, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_041_420, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_041_452, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_041_487, "type" => "tenure"}
+]
+
+Pens.perf_ratio(pens)
+```
+
+```elixir
+IO.puts("SLK 10/8 on Ryzen interserver .... horrible perf pens")
+
+pens = [
+  %{"amount" => 0.6590728759765625, "height" => 1_044_894, "type" => "performance"},
+  %{"amount" => 1.318145751953125, "height" => 1_044_797, "type" => "performance"},
+  %{"amount" => 0.5, "height" => 1_044_764, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_044_797, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_044_830, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_044_862, "type" => "tenure"}
+]
+
+Pens.perf_ratio(pens)
+```
+
+### SLK 10/9 -- improbably joined CG with high penalty _while_ I had IS investigate the server
+
+#### Big Perf Penalty at start of run:  1.31...   WHY????    Bottom 3
+
+1.3181304931640625 -->
+
+##### 1046809: 7 blocks since epoch
+
+* Our seen 263 of 266 (max)
+* Our BBA 7 of 7 (blocks)
+
+##### 1046809: 7 blocks since epoch
+
+* Our seen 263 of 266 (max)
+* Our BBA 7 of 7 (blocks)
+
+##### 1046819: 17 blocks since epoch
+
+* Our seen 693 of 696 (max)
+* Our BBA 17 of 17 (blocks)
+
+##### 1046831: 29 blocks since epoch
+
+* Our seen 1207 of 1210 (max)
+* Our BBA 29 of 29 (blocks)
+
+New election...  seems to be doing well
+
+##### 1046843: 8 blocks since epoch
+
+* Our seen 322 of 322 (max)
+* Our BBA 8 of 8 (blocks)
+
+##### 1046854: 19 blocks since epoch
+
+* Our seen 795 of 795 (max)
+* Our BBA 19 of 19 (blocks)
+
+```elixir
+IO.puts("SLK 10/9 on Ryzen interserver .... bottom 3 perf")
+
+pens = [
+  %{"amount" => 1.3181304931640625, "height" => 1_046_800, "type" => "performance"},
+  %{"amount" => 0.5, "height" => 1_046_767, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_046_800, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_046_833, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_046_866, "type" => "tenure"}
+]
+
+Pens.perf_ratio(pens)
+```
+
 ## Bottom
+
+

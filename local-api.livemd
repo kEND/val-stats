@@ -764,3 +764,7 @@ Tail.stop(pid2)
 * Both are running VALIDATION_WIDTH=6
 
 ### RESOLVED - both are running `latest` with default `VALIDATION_WIDTH`
+
+<!-- livebook:{"break_markdown":true} -->
+
+
