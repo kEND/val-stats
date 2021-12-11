@@ -56,11 +56,25 @@ when not elected, stop
 
 ```elixir
 perf = LocalApi.hbbft_perf()
-"#{perf["current_height"]}: #{perf["blocks_since_epoch"]} blocks since epoch"
+IO.puts("#{perf["current_height"]}: #{perf["blocks_since_epoch"]} blocks since epoch")
 ```
 
 ```elixir
 %{"consensus_members" => consensus_group} = perf
+ups_pos = Enum.find_index(consensus_group, fn map -> map["name"] == "uneven-peanut-swift" end)
+slk_pos = Enum.find_index(consensus_group, fn map -> map["name"] == "sharp-leather-kangaroo" end)
+pos = ups_pos || slk_pos
+```
+
+```elixir
+perf = LocalApi.hbbft_perf()
+IO.puts("#{perf["current_height"]}: #{perf["blocks_since_epoch"]} blocks since epoch")
+
+%{"consensus_members" => consensus_group} = perf
+ups_pos = Enum.find_index(consensus_group, fn map -> map["name"] == "uneven-peanut-swift" end)
+slk_pos = Enum.find_index(consensus_group, fn map -> map["name"] == "sharp-leather-kangaroo" end)
+pos = ups_pos || slk_pos
+
 ups_perf = Enum.find(consensus_group, fn map -> map["name"] == "uneven-peanut-swift" end)
 slk_perf = Enum.find(consensus_group, fn map -> map["name"] == "sharp-leather-kangaroo" end)
 %{"max_seen" => max_seen} = perf
@@ -75,6 +89,7 @@ val_perf = ups_perf || slk_perf
 IO.puts("##### #{perf["current_height"]}: #{perf["blocks_since_epoch"]} blocks since epoch")
 IO.puts("- Our seen #{val_perf["seen_votes"]} of #{perf["max_seen"]} (max)")
 IO.puts("- Our BBA #{val_perf["bba_completions"]} of #{perf["blocks_since_epoch"]} (blocks)")
+IO.puts("- position: #{pos} " <> if(pos in 40..42, do: "BOTTOM 3", else: ""))
 ```
 
 ```

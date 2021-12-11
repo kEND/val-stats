@@ -39,12 +39,12 @@ ups = "112J6SmH7LGKNLDyG6Wbqd9pmA2zAJbgNcmAwQZtYKYmNQunYd73"
 ```
 
 ```elixir
-%{"data" => %{"penalties" => penalties}} = body
-penalties
+{:ok, %{body: body}} = HeliumClient.client(url) |> Tesla.get("/v1/validators/" <> ups)
 ```
 
 ```elixir
-{:ok, %{body: body}} = HeliumClient.client(url) |> Tesla.get("/v1/validators/" <> ups)
+%{"data" => %{"penalties" => penalties}} = body
+penalties
 ```
 
 #### UPS CGs of 8/25
@@ -1553,6 +1553,235 @@ pens = [
 Pens.perf_ratio(pens)
 ```
 
+```elixir
+IO.puts("UPS 10/13 on Ryzen interserver .... 2 CGs with perf")
+IO.puts("3 missed BBA at 1_052_447 for 0.3")
+IO.puts("8 missed BBA at 1_052_414 for 0.8")
+
+pens = [
+  %{"amount" => 0.2998809814453125, "height" => 1_052_447, "type" => "performance"},
+  %{"amount" => 0.79937744140625, "height" => 1_052_414, "type" => "performance"},
+  %{"amount" => 0.5, "height" => 1_052_381, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_052_414, "type" => "tenure"}
+]
+
+Pens.perf_ratio(pens)
+```
+
+Some big DKGs on SLK pbau.painlesspm.com.  Logs captured.  Evan knows.  No resolution.
+
+* [ ] rebuild pbau.painlesspm.com
+
+<!-- livebook:{"break_markdown":true} -->
+
+UPS in CG...  29 Oct 2021
+
+##### 1075875: 13 blocks since epoch
+
+* Our seen 496 of 498 (max)
+* Our BBA 13 of 13 (blocks)
+
+##### 1075880: 18 blocks since epoch
+
+* Our seen 691 of 693 (max)
+* Our BBA 18 of 18 (blocks)
+
+##### 1075888: 26 blocks since epoch
+
+* Our seen 1002 of 1004 (max)
+* Our BBA 26 of 26 (blocks)
+
+##### 1075916: 54 blocks since epoch
+
+* Our seen 2092 of 2094 (max)
+* Our BBA 54 of 54 (blocks)
+* position: 16
+
+long epoch...
+
+##### 1075924: 62 blocks since epoch
+
+* Our seen 2397 of 2399 (max)
+* Our BBA 62 of 62 (blocks)
+* position: 16
+
+##### 1075943: 2 blocks since epoch
+
+* Our seen 62 of 65 (max)
+* Our BBA 2 of 2 (blocks)
+* position: 36
+
+##### 1075948: 7 blocks since epoch
+
+* Our seen 257 of 262 (max)
+* Our BBA 7 of 7 (blocks)
+* position: 36
+
+##### 1075959: 18 blocks since epoch
+
+* Our seen 717 of 722 (max)
+* Our BBA 18 of 18 (blocks)
+* position: 36
+
+##### 1075965: 24 blocks since epoch
+
+* Our seen 958 of 963 (max)
+* Our BBA 24 of 24 (blocks)
+* position: 36
+
+##### 1075967: 26 blocks since epoch
+
+* Our seen 1043 of 1048 (max)
+* Our BBA 26 of 26 (blocks)
+* position: 36
+
+##### 1075978: 4 blocks since epoch
+
+* Our seen 145 of 145 (max)
+* Our BBA 4 of 4 (blocks)
+* position: 8
+
+##### 1075981: 7 blocks since epoch
+
+* Our seen 265 of 265 (max)
+* Our BBA 7 of 7 (blocks)
+* position: 8
+
+#### some BBA this epoch
+
+##### 1076013: 6 blocks since epoch
+
+* Our seen 224 of 224 (max)
+* Our BBA 5 of 6 (blocks)
+* position: 31
+
+##### 1076015: 8 blocks since epoch
+
+* Our seen 296 of 296 (max)
+* Our BBA 6 of 8 (blocks)
+* position: 31
+
+##### 1076020: 13 blocks since epoch
+
+* Our seen 486 of 486 (max)
+* Our BBA 10 of 13 (blocks)
+* position: 31
+
+##### 1076030: 23 blocks since epoch
+
+* Our seen 866 of 866 (max)
+* Our BBA 19 of 23 (blocks)
+* position: 31
+
+##### 1076035: 28 blocks since epoch
+
+* Our seen 1058 of 1058 (max)
+* Our BBA 22 of 28 (blocks)
+* position: 31
+
+##### 1076037: 30 blocks since epoch
+
+* Our seen 1135 of 1135 (max)
+* Our BBA 24 of 30 (blocks)
+* position: 31
+
+#### new epoch
+
+##### 1076042: 3 blocks since epoch
+
+* Our seen 99 of 99 (max)
+* Our BBA 3 of 3 (blocks)
+* position: 4
+
+##### 1076074: 3 blocks since epoch
+
+* Our seen 117 of 121 (max)
+* Our BBA 3 of 3 (blocks)
+* position: 38
+
+```elixir
+IO.puts("UPS 10/13 on PbAu2 Ryzen interserver ....")
+IO.puts("fair amount of penalties, not sure about bottom three in final few epochs")
+
+pens = [
+  %{"amount" => 0.29974365234375, "height" => 1_073_984, "type" => "performance"},
+  %{"amount" => 0.599578857421875, "height" => 1_076_037, "type" => "performance"},
+  %{"amount" => 0.69952392578125, "height" => 1_076_069, "type" => "performance"},
+  %{"amount" => 0.7994384765625, "height" => 1_076_167, "type" => "performance"},
+  %{"amount" => 0.8994598388671875, "height" => 1_076_134, "type" => "performance"},
+  %{"amount" => 0.5, "height" => 1_075_860, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_075_939, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_075_972, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_076_005, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_076_037, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_076_069, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_076_101, "type" => "tenure"},
+  %{"amount" => 0.5, "height" => 1_076_134, "type" => "tenure"}
+]
+
+Pens.perf_ratio(pens)
+```
+
 ## Bottom
 
+<!-- livebook:{"branch_parent_index":1} -->
 
+## Stakejoy hbbft_perf
+
+A little api that I am working on for hbbft perf data. 
+/v1/hbbft/blocks/<block_num> : will return hbbft perf for the block height
+/v1/hbbft/epochs/<epoch_num>: will return all of the hbbft perfs in the whole epoch 
+https://tools.stakejoy.com/v1/hbbft/blocks/1048675
+https://tools.stakejoy.com/v1/hbbft/epochs/27263
+https://tools.stakejoy.com/v1/hbbft/latest 
+I thought it might be useful for some folks investigating penalties and bad performance.
+
+```elixir
+defmodule ToolsStakeJoyClient do
+  require Tesla
+
+  # helium-api.stakejoy.com
+  def client(url \\ "https://tools.stakejoy.com/") do
+    Tesla.client([
+      {Tesla.Middleware.BaseUrl, url},
+      Tesla.Middleware.JSON
+    ])
+  end
+end
+```
+
+```elixir
+# https://tools.stakejoy.com/v1/hbbft/latest
+
+{:ok, %{body: body}} = ToolsStakeJoyClient.client() |> Tesla.get("v1/hbbft/" <> "blocks/1075875")
+
+# {:ok, %{body: body2}} =
+#   ToolsStakeJoyClient.client() |> Tesla.get("v1/hbbft/" <> "epoch/27400")
+#   
+```
+
+```elixir
+body
+|> Enum.map(fn val ->
+  cond do
+    val["address"] == "112J6SmH7LGKNLDyG6Wbqd9pmA2zAJbgNcmAwQZtYKYmNQunYd73" ->
+      Map.put(val, :name, "uneven-peanut-swift")
+
+    true ->
+      val
+  end
+end)
+```
+
+## Penalties
+
+### BBA
+
+You must miss 12 or more BBA in an epoch (round) in order to get penalized
+
+## Pbau Interserver rebuild....
+
+UPS just did a run on Pbau2 and is >= 9 penalty.  So, UPS is now on pbautertius with SLK on Pbau2.
+
+* [ ] hear back from Interserver re: fresh install
+* [ ] follow the tasks to setup a drive, mount, etc
